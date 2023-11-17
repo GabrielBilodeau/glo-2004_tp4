@@ -33,10 +33,13 @@ class Server:
 
         S'assure que les dossiers de données du serveur existent.
         """
-        # self._server_socket
-        # self._client_socs
-        # self._logged_users
-        # ...
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        soc.bind(("127.0.0.1", 7777)) # Hardcoded
+        soc.listen()
+        self._server_socket = soc
+        self._client_socs = []
+        self._logged_users = {}
 
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
@@ -46,9 +49,19 @@ class Server:
 
     def _accept_client(self) -> None:
         """Accepte un nouveau client."""
+        client_socket, _  = self._server_socket.accept()
+        self._client_socs.append(client_socket)
+        try:
+            glosocket.send_mesg(client_socket, "Bienvenu sur le serveur !")
+        except glosocket.GLOSocketError:
+            self._remove_client(client_socket)
+
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
+        if client_soc in self._client_socs:
+            self._client_socs.remove(client_soc)
+        client_soc.close()
 
     def _create_account(self, client_soc: socket.socket,
                         payload: gloutils.AuthPayload
