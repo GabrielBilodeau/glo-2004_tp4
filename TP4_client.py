@@ -11,6 +11,7 @@ import getpass
 import json
 import socket
 import sys
+import re
 
 import glosocket
 import gloutils
@@ -27,7 +28,8 @@ class Client:
         courant. Laissé vide quand l'utilisateur n'est pas connecté.
         """
 
-        self.username = destination
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect(destination)
 
     def _register(self) -> None:
         """
@@ -104,6 +106,14 @@ class Client:
             else:
                 # Main menu
                 pass
+
+    def _validate_destination(p_destination: str) -> bool:
+        good_domain = False
+
+        if re.search(r".+@glo2000\.ca") is not None:
+            good_domain = True
+        
+        return good_domain
 
 
 def _main() -> int:
