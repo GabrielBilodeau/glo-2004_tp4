@@ -35,7 +35,7 @@ class Server:
         """
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        soc.bind(("127.0.0.1", 7777)) # Hardcoded
+        soc.bind(("127.0.0.1", gloutils.APP_PORT))
         soc.listen()
         self._server_socket = soc
         self._client_socs = []
@@ -52,7 +52,7 @@ class Server:
         client_socket, _  = self._server_socket.accept()
         self._client_socs.append(client_socket)
         try:
-            glosocket.send_mesg(client_socket, "Bienvenu sur le serveur !")
+            glosocket.send_mesg(client_socket, "Bienvene sur le serveur !")
         except glosocket.GLOSocketError:
             self._remove_client(client_socket)
 

@@ -30,8 +30,8 @@ class Client:
 
         self._username = None
 
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect(destination)
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.connect((destination, gloutils.APP_PORT))
 
     def _register(self) -> None:
         """
@@ -50,6 +50,14 @@ class Client:
         Si la connexion est effectuée avec succès, l'attribut `_username`
         est mis à jour, sinon l'erreur est affichée.
         """
+
+        username = input("Entrez votre nom d'utilisateur: ")
+        password = getpass.getpass("Entrez votre mot de passe :")
+        
+        #Implemntation a changer
+
+        self._username = username
+    
 
     def _quit(self) -> None:
         """
