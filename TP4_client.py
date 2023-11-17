@@ -109,8 +109,7 @@ class Client:
 
     def _validate_destination(p_destination: str) -> bool:
         good_domain = False
-
-        if re.search(r".+@glo2000\.ca") is not None:
+        if p_destination[-11:] == "@glo2000.ca": #On regarde si la fin de la string est bien le nom du domaine
             good_domain = True
         
         return good_domain
