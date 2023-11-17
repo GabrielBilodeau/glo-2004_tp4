@@ -104,7 +104,18 @@ class Client:
         while not should_quit:
             if not self._username:
                 # Authentication menu
-                pass
+                print(gloutils.CLIENT_AUTH_CHOICE + "\n")
+                choice = input("Entrez votre choix [1-3]: ")
+
+                match choice:
+                    case "1":
+                        self._register()
+                    case "2":
+                        self._login()
+                    case "3":
+                        should_quit = True
+                    case _:
+                        continue
             else:
                 # Main menu
                 pass
