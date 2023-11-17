@@ -27,6 +27,8 @@ class Client:
         courant. Laissé vide quand l'utilisateur n'est pas connecté.
         """
 
+        self.username = destination
+
     def _register(self) -> None:
         """
         Demande un nom d'utilisateur et un mot de passe et les transmet au
