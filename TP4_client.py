@@ -129,9 +129,9 @@ class Client:
                 print(gloutils.CLIENT_USE_CHOICE + "\n")
                 choice = input("Entrez votre choix [1-4]: ")
 
-    def _validate_destination(p_destination: str) -> bool:
+    def _validate_domain(p_destination: str) -> bool:
         good_domain = False
-        if p_destination[-11:] == "@glo2000.ca": #On regarde si la fin de la string est bien le nom du domaine
+        if p_destination[-11:] == f"@{gloutils.SERVER_DOMAIN}": #On regarde si la fin de la string est bien le nom du domaine
             good_domain = True
         
         return good_domain
