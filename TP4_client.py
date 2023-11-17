@@ -28,6 +28,8 @@ class Client:
         courant. Laissé vide quand l'utilisateur n'est pas connecté.
         """
 
+        self._username = None
+
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(destination)
 
