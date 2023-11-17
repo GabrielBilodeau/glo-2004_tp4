@@ -118,7 +118,8 @@ class Client:
                         continue
             else:
                 # Main menu
-                pass
+                print(gloutils.CLIENT_USE_CHOICE + "\n")
+                choice = input("Entrez votre choix [1-4]: ")
 
     def _validate_destination(p_destination: str) -> bool:
         good_domain = False
