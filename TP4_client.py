@@ -11,7 +11,7 @@ import getpass
 import json
 import socket
 import sys
-import re
+import hashlib
 
 import glosocket
 import gloutils
@@ -51,12 +51,28 @@ class Client:
         est mis à jour, sinon l'erreur est affichée.
         """
 
-        username = input("Entrez votre nom d'utilisateur: ")
-        password = getpass.getpass("Entrez votre mot de passe :")
+        hasher = hashlib.sha3_224()
+
+        login_username = input("Entrez votre nom d'utilisateur: ")
+        login_password = getpass.getpass("Entrez votre mot de passe :")
+
+        credentials = gloutils.AuthPayload(
+            username=login_username,
+            password=hasher.update(login_password.encode("ut-8"))
+        )
+
+        message = json.dumps(
+            gloutils.GloMessage(
+                header=gloutils.Headers.AUTH_LOGIN,
+                payload=credentials
+            )
+        )
+
+        glosocket.send_mesg(self._socket, message)
         
         #Implemntation a changer
 
-        self._username = username
+        self._username = login_username
     
 
     def _quit(self) -> None:
