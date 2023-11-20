@@ -58,7 +58,7 @@ class Client:
 
         credentials = gloutils.AuthPayload(
             username=login_username,
-            password=hasher.update(login_password.encode("ut-8"))
+            password=hasher.update(login_password.encode("utf-8"))
         )
 
         message = json.dumps(
@@ -69,10 +69,13 @@ class Client:
         )
 
         glosocket.send_mesg(self._socket, message)
-        
-        #Implemntation a changer
 
-        self._username = login_username
+        response = glosocket.recv_mesg(self._socket)
+        json_response = json.loads(response)
+        if json_response["payload"] == gloutils.Headers.OK:
+            self._username = login_username
+        elif json_response["payload"] == gloutils.Headers.ERROR:
+            print("Nom d'utilisateur ou mot de passe invalide !")
     
 
     def _quit(self) -> None:

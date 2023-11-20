@@ -39,7 +39,7 @@ class Server:
         soc.listen()
         self._server_socket = soc
         self._client_socs = []
-        self._logged_users = {}
+        self._logged_users = {} 
 
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
@@ -49,12 +49,15 @@ class Server:
 
     def _accept_client(self) -> None:
         """Accepte un nouveau client."""
+        print("accepting new client")
         client_socket, _  = self._server_socket.accept()
         self._client_socs.append(client_socket)
+        self._login(client_socket, glosocket.recv_mesg(client_socket))
         try:
             glosocket.send_mesg(client_socket, "Bienvene sur le serveur !")
         except glosocket.GLOSocketError:
             self._remove_client(client_socket)
+
 
 
     def _remove_client(self, client_soc: socket.socket) -> None:
@@ -83,6 +86,27 @@ class Server:
         Si les identifiants sont valides, associe le socket à l'utilisateur et
         retourne un succès, sinon retourne un message d'erreur.
         """
+
+        if client_soc in self._logged_users:
+            if self._logged_users[client_soc] == payload:
+                message = json.dumps(
+                    gloutils.GloMessage(
+                        header=gloutils.Headers.AUTH_LOGIN,
+                        payload=gloutils.Headers.OK
+                    )
+                )
+                
+                glosocket.send_mesg(client_soc, message)
+        else:
+            message = json.dumps(
+                    gloutils.GloMessage(
+                        header=gloutils.Headers.AUTH_LOGIN,
+                        payload=gloutils.Headers.ERROR
+                    )
+                )
+            glosocket.send_mesg(client_soc, message)
+
+
         return gloutils.GloMessage()
 
     def _logout(self, client_soc: socket.socket) -> None:
@@ -131,12 +155,16 @@ class Server:
 
     def run(self):
         """Point d'entrée du serveur."""
-        waiters = []
+        result = select.select([self._server_socket] + self._client_socs, [], [])
+        waiters = result[0]
         while True:
             # Select readable sockets
             for waiter in waiters:
-                # Handle sockets
-                pass
+                if waiter == self._server_socket:
+                    self._accept_client()
+                else:
+                    self._login(waiter, json.load(glosocket.recv_mesg(waiter)))
+            
 
 
 def _main() -> int:
