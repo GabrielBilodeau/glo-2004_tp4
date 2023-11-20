@@ -52,13 +52,20 @@ class Server:
         print("accepting new client")
         client_socket, _  = self._server_socket.accept()
         self._client_socs.append(client_socket)
-        self._login(client_socket, glosocket.recv_mesg(client_socket))
+
+        payload = glosocket.recv_mesg(client_socket)
+
+        if json.loads(payload)["header"] == gloutils.Headers.AUTH_LOGIN:
+            message = self._login(client_socket, payload)
+            glosocket.send_mesg(client_socket, json.dumps(message))
+        elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
+            print("Register new user")
+        
+
         try:
             glosocket.send_mesg(client_socket, "Bienvene sur le serveur !")
         except glosocket.GLOSocketError:
             self._remove_client(client_socket)
-
-
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
@@ -89,25 +96,15 @@ class Server:
 
         if client_soc in self._logged_users:
             if self._logged_users[client_soc] == payload:
-                message = json.dumps(
-                    gloutils.GloMessage(
+                return gloutils.GloMessage(
                         header=gloutils.Headers.AUTH_LOGIN,
                         payload=gloutils.Headers.OK
                     )
-                )
-                
-                glosocket.send_mesg(client_soc, message)
         else:
-            message = json.dumps(
-                    gloutils.GloMessage(
+            return gloutils.GloMessage(
                         header=gloutils.Headers.AUTH_LOGIN,
                         payload=gloutils.Headers.ERROR
                     )
-                )
-            glosocket.send_mesg(client_soc, message)
-
-
-        return gloutils.GloMessage()
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
@@ -162,8 +159,8 @@ class Server:
             for waiter in waiters:
                 if waiter == self._server_socket:
                     self._accept_client()
-                else:
-                    self._login(waiter, json.load(glosocket.recv_mesg(waiter)))
+                
+                   
             
 
 
