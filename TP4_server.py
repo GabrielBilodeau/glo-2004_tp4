@@ -55,6 +55,8 @@ class Server:
         if not os.path.exists(lost_dir_path):
             os.makedirs(lost_dir_path)
 
+        self._SERVER_LOST_DIR = lost_dir_path
+
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
         for client_soc in self._client_socs:
@@ -98,11 +100,41 @@ class Server:
         """
 
         message = json.loads(payload)
-        # verifier l'username avec un Regex
         received_username = message["payload"]["username"]
         received_pwd = message["payload"]["password"]
-        if re.search(r"\w+|[.-]+", received_username):
-            print('correct')
+
+
+        if re.search(r"^\w+$", received_username):
+            lowerCaseUsername = received_username.lower()
+            if not os.path.exists(self._SERVER_LOST_DIR + lowerCaseUsername):
+                if re.search(r"((?=[^a-z]*[a-z])(?=[^A-Z]*[A-Z])(?=[^0-9]*[0-9])){10,}",
+                              received_pwd):
+                    print(received_pwd)
+                    hasher = hashlib.sha3_512()
+                    hashed_pwd = hasher.update(received_pwd.encode('utf-8'))
+                    print(hashed_pwd)
+
+                    
+                    return gloutils.GloMessage(
+                        header=gloutils.Headers.OK,
+                    )
+                   
+                else:
+                   error_payload = gloutils.ErrorPayload(
+                       error_message="Le mot de passe n'est pas assez securise"
+                    )
+                   return gloutils.GloMessage(
+                       header=gloutils.Headers.ERROR,
+                       payload=error_payload
+                    )   
+            else:
+                error_payload = gloutils.ErrorPayload(
+                   error_message="le nom d'utilisateur est deja utilise"
+                   )
+                return gloutils.GloMessage(
+                   header=gloutils.Headers.ERROR,
+                   payload=error_payload
+               )
         else:
             error_payload = gloutils.ErrorPayload(
                 error_message="le nom d'utilisateur n'est pas valide"
@@ -111,13 +143,6 @@ class Server:
                 header=gloutils.Headers.ERROR,
                 payload=error_payload
             )
-
-                
-
-        print(received_pwd)
-        print(received_username)
-
-
         return gloutils.GloMessage()
 
     def _login(self, client_soc: socket.socket, payload: gloutils.AuthPayload
@@ -129,6 +154,7 @@ class Server:
         retourne un succès, sinon retourne un message d'erreur.
         """
 
+        # Changer le header
         if client_soc in self._logged_users:
             if self._logged_users[client_soc] == payload:
                 return gloutils.GloMessage(
