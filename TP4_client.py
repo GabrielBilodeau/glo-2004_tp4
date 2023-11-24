@@ -65,6 +65,8 @@ class Client:
             self._username = register_username
         elif json_reponse['header'] == gloutils.Headers.ERROR:
             print(json_reponse['payload']["error_message"])
+        else:
+            print("Invalid server response")
 
 
     def _login(self) -> None:
@@ -99,6 +101,8 @@ class Client:
             self._username = login_username
         elif json_response["payload"] == gloutils.Headers.ERROR:
             print(json_response["payload"]["error_message"])
+        else:
+            print("Invalid server response")
     
 
     def _quit(self) -> None:
