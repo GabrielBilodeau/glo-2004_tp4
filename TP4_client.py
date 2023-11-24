@@ -185,6 +185,34 @@ class Client:
         Transmet ces informations avec l'entête `EMAIL_SENDING`.
         """
 
+        sender = self._username
+        destination = input("Entrez l'addresse du destinataire :")
+        subject = input("Entrez le sujet: ")
+        print("""Entrez le contenu du courriel,
+              terminez la saisie avec un '.' seul sur une ligne: """)
+        body = ""
+        buffer = ""
+        while (buffer != ".\n"):
+            body += buffer
+            buffer = input() + '\n'
+        date = gloutils.get_current_utc_time
+
+        email = gloutils.EmailContentPayload(
+            sender=sender,
+            destination=destination,
+            subject=subject,
+            date=date,
+            content=body
+        )
+
+        message = gloutils.GloMessage(
+            header=gloutils.Headers.EMAIL_SENDING,
+            payload=email
+        )
+
+        glosocket.send_mesg(self._socket, message)
+
+
     def _check_stats(self) -> None:
         """
         Demande les statistiques au serveur avec l'entête `STATS_REQUEST`.
