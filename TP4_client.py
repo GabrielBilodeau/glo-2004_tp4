@@ -42,6 +42,35 @@ class Client:
         `_username` est mis à jour, sinon l'erreur est affichée.
         """
 
+        hasher = hashlib.sha3_224()
+
+        register_username = input("Entrez votre nom d'utilisateur: ")
+        register_password = getpass.getpass("Entrez votre mot de passe: ")
+
+        credentials = gloutils.AuthPayload(
+            username=register_username,
+            password=hasher.update(register_password.encode("ut-8"))
+        )
+
+        message = json.dumps(
+            gloutils.GloMessage(
+                header=gloutils.Headers.AUTH_LOGIN,
+                payload=credentials
+            )
+        )
+
+        glosocket.send_mesg(self._socket, message)
+
+        response = glosocket.recv_mesg(self._socket)
+        json_response = json.loads(response)
+
+        if json_response["payload"] == gloutils.Headers.OK:
+            self._username = register_username
+        elif json_response["payload"] == gloutils.Headers.ERROR:
+            print(json_response["payload"]["error_message"])
+        else:
+            print("TODO") #TODO find how to handle other cases
+
     def _login(self) -> None:
         """
         Demande un nom d'utilisateur et un mot de passe et les transmet au
@@ -54,7 +83,7 @@ class Client:
         hasher = hashlib.sha3_224()
 
         login_username = input("Entrez votre nom d'utilisateur: ")
-        login_password = getpass.getpass("Entrez votre mot de passe :")
+        login_password = getpass.getpass("Entrez votre mot de passe: ")
 
         credentials = gloutils.AuthPayload(
             username=login_username,
@@ -75,7 +104,9 @@ class Client:
         if json_response["payload"] == gloutils.Headers.OK:
             self._username = login_username
         elif json_response["payload"] == gloutils.Headers.ERROR:
-            print("Nom d'utilisateur ou mot de passe invalide !")
+            print(json_response["payload"]["error_message"])
+        else:
+            print("TODO") #TODO find how to handle other cases
     
 
     def _quit(self) -> None:
