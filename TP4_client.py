@@ -64,7 +64,7 @@ class Client:
         if json_reponse['header'] == gloutils.Headers.OK:
             self._username = register_username
         elif json_reponse['header'] == gloutils.Headers.ERROR:
-            print(json_reponse['payload'].error_message)
+            print(json_reponse['payload']["error_message"])
 
 
     def _login(self) -> None:
