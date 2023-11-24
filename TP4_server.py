@@ -33,13 +33,27 @@ class Server:
 
         S'assure que les dossiers de données du serveur existent.
         """
-        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        soc.bind(("127.0.0.1", gloutils.APP_PORT))
-        soc.listen()
+        try :
+            soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            soc.bind(("127.0.0.1", gloutils.APP_PORT))
+            soc.listen()
+        except socket.error:
+            sys.exit(1)
         self._server_socket = soc
         self._client_socs = []
-        self._logged_users = {} 
+        self._logged_users = {}
+
+        current_dir =os.path.dirname(os.path.abspath(__file__))
+        SERVER_DATA_DIR = os.path.join(current_dir, 'SERVER_DATA_DIR')
+        SERVER_LOST_DIR = 'SERVER_LOST_DIR'
+
+        if not os.path.exists(SERVER_DATA_DIR):
+            os.makedirs(SERVER_DATA_DIR)
+        
+        lost_dir_path = os.path.join(SERVER_DATA_DIR, SERVER_LOST_DIR)
+        if not os.path.exists(lost_dir_path):
+            os.makedirs(lost_dir_path)
 
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
@@ -61,6 +75,10 @@ class Server:
         elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
             message = self._create_account(client_socket, payload)
             glosocket.send_mesg(client_socket, message)
+        elif json.loads(payload)["header"] == gloutils.Headers.BYE:
+            # Si logged in retirer du dic
+            self._client_socs.pop(client_socket)
+            client_socket.close()
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
