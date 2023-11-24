@@ -97,9 +97,9 @@ class Client:
 
         response = glosocket.recv_mesg(self._socket)
         json_response = json.loads(response)
-        if json_response["payload"] == gloutils.Headers.OK:
+        if json_response["header"] == gloutils.Headers.OK:
             self._username = login_username
-        elif json_response["payload"] == gloutils.Headers.ERROR:
+        elif json_response["header"] == gloutils.Headers.ERROR:
             print(json_response["payload"]["error_message"])
         else:
             print("Invalid server response")
@@ -129,6 +129,49 @@ class Client:
         S'il n'y a pas de courriel à lire, l'utilisateur est averti avant de
         retourner au menu principal.
         """
+
+        request = gloutils.GloMessage(
+            header=gloutils.Headers.INBOX_READING_REQUEST
+        )
+        glosocket.send_mesg(self._socket, json.dumps(request))
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+        if response["header"] == gloutils.Headers.OK:
+            email_list = response["payload"]["email_list"]
+            if len(email_list) > 0:
+                for email in email_list:
+                    print(email)
+
+                mail_choice = input(f"Entrez votre choix [1-{len(email_list)}]")
+
+                choice_payload = gloutils.EmailChoicePayload(
+                    choice = int(mail_choice)
+                )
+
+                choice_request = gloutils.GloMessage(
+                    header=gloutils.Headers.INBOX_READING_CHOICE,
+                    payload=choice_payload
+                )
+
+                glosocket.send_mesg(self._socket, choice_request)
+
+                content_response = json.loads(glosocket.recv_mesg(self._socket))
+
+                if content_response["header"] == gloutils.Headers.OK:
+                    mail_content = content_response["payload"]
+                    sender = mail_content["sender"]
+                    destination = mail_content["destination"]
+                    subject = mail_content["subject"]
+                    date = mail_content["date"]
+                    content = mail_content["content"]
+
+                    print(gloutils.EMAIL_DISPLAY.format(
+                        sender=sender,
+                        to=destination,
+                        subject=subject,
+                        date=date,
+                        body=content
+                    ))
 
     def _send_email(self) -> None:
         """
