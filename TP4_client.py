@@ -181,7 +181,9 @@ class Client:
 
     def _validate_domain(p_destination: str) -> bool:
         good_domain = False
-        if p_destination[-11:] == f"@{gloutils.SERVER_DOMAIN}": #On regarde si la fin de la string est bien le nom du domaine
+        
+        #Check if the end of the string is the right domain name
+        if p_destination[-11:] == f"@{gloutils.SERVER_DOMAIN}":
             good_domain = True
         
         return good_domain
