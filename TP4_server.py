@@ -5,7 +5,7 @@ Noms et numéros étudiants:
 -
 -
 """
-
+import re
 import hashlib
 import hmac
 import json
@@ -74,7 +74,7 @@ class Server:
             glosocket.send_mesg(client_socket, json.dumps(message))
         elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
             message = self._create_account(client_socket, payload)
-            glosocket.send_mesg(client_socket, message)
+            glosocket.send_mesg(client_socket,json.dumps(message))
         elif json.loads(payload)["header"] == gloutils.Headers.BYE:
             # Si logged in retirer du dic
             self._client_socs.pop(client_socket)
@@ -99,7 +99,23 @@ class Server:
 
         message = json.loads(payload)
         # verifier l'username avec un Regex
-        print(message.username)
+        received_username = message["payload"]["username"]
+        received_pwd = message["payload"]["password"]
+        if re.search(r"\w+|[.-]+", received_username):
+            print('correct')
+        else:
+            error_payload = gloutils.ErrorPayload(
+                error_message="le nom d'utilisateur n'est pas valide"
+            )
+            return gloutils.GloMessage(
+                header=gloutils.Headers.ERROR,
+                payload=error_payload
+            )
+
+                
+
+        print(received_pwd)
+        print(received_username)
 
 
         return gloutils.GloMessage()
