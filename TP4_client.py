@@ -31,7 +31,10 @@ class Client:
         self._username = None
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.connect((destination, gloutils.APP_PORT))
+        try:
+            self._socket.connect((destination, gloutils.APP_PORT))
+        except socket.error:
+            sys.exit(1)
 
     def _register(self) -> None:
         """
@@ -41,35 +44,28 @@ class Client:
         Si la création du compte s'est effectuée avec succès, l'attribut
         `_username` est mis à jour, sinon l'erreur est affichée.
         """
-
-        hasher = hashlib.sha3_224()
-
         register_username = input("Entrez votre nom d'utilisateur: ")
         register_password = getpass.getpass("Entrez votre mot de passe: ")
 
-        credentials = gloutils.AuthPayload(
+        register_payload = gloutils.AuthPayload(
             username=register_username,
-            password=hasher.update(register_password.encode("ut-8"))
+            password=register_password
         )
 
-        message = json.dumps(
-            gloutils.GloMessage(
-                header=gloutils.Headers.AUTH_LOGIN,
-                payload=credentials
-            )
-        )
-
+        message = json.dumps(gloutils.GloMessage(
+            header=gloutils.Headers.AUTH_REGISTER,
+            payload=register_payload
+        ))
         glosocket.send_mesg(self._socket, message)
 
-        response = glosocket.recv_mesg(self._socket)
-        json_response = json.loads(response)
+        reponse = glosocket.recv_mesg(self._socket)
+        json_reponse = json.loads(reponse)
 
-        if json_response["payload"] == gloutils.Headers.OK:
+        if json_reponse['header'] == gloutils.Headers.OK:
             self._username = register_username
-        elif json_response["payload"] == gloutils.Headers.ERROR:
-            print(json_response["payload"]["error_message"])
-        else:
-            print("TODO") #TODO find how to handle other cases
+        elif json_reponse['header'] == gloutils.Headers.ERROR:
+            print(json_reponse['payload'].error_message)
+
 
     def _login(self) -> None:
         """
@@ -80,14 +76,12 @@ class Client:
         est mis à jour, sinon l'erreur est affichée.
         """
 
-        hasher = hashlib.sha3_224()
-
         login_username = input("Entrez votre nom d'utilisateur: ")
         login_password = getpass.getpass("Entrez votre mot de passe: ")
 
         credentials = gloutils.AuthPayload(
             username=login_username,
-            password=hasher.update(login_password.encode("utf-8"))
+            password=login_password
         )
 
         message = json.dumps(
@@ -105,8 +99,6 @@ class Client:
             self._username = login_username
         elif json_response["payload"] == gloutils.Headers.ERROR:
             print(json_response["payload"]["error_message"])
-        else:
-            print("TODO") #TODO find how to handle other cases
     
 
     def _quit(self) -> None:
@@ -114,6 +106,11 @@ class Client:
         Préviens le serveur de la déconnexion avec l'entête `BYE` et ferme le
         socket du client.
         """
+        message = gloutils.GloMessage(
+                            header=gloutils.Headers.BYE
+                        )
+        glosocket.send_mesg(self._socket, json.dumps(message))
+        self._socket.close()
 
     def _read_email(self) -> None:
         """
@@ -171,6 +168,7 @@ class Client:
                     case "2":
                         self._login()
                     case "3":
+                        self._quit()
                         should_quit = True
                     case _:
                         continue

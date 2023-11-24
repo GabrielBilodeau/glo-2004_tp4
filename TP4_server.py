@@ -59,13 +59,8 @@ class Server:
             message = self._login(client_socket, payload)
             glosocket.send_mesg(client_socket, json.dumps(message))
         elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
-            print("Register new user")
-        
-
-        try:
-            glosocket.send_mesg(client_socket, "Bienvene sur le serveur !")
-        except glosocket.GLOSocketError:
-            self._remove_client(client_socket)
+            message = self._create_account(client_socket, payload)
+            glosocket.send_mesg(client_socket, message)
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
@@ -83,6 +78,12 @@ class Server:
         associe le socket au nouvel l'utilisateur et retourne un succès,
         sinon retourne un message d'erreur.
         """
+
+        message = json.loads(payload)
+        # verifier l'username avec un Regex
+        print(message.username)
+
+
         return gloutils.GloMessage()
 
     def _login(self, client_soc: socket.socket, payload: gloutils.AuthPayload
