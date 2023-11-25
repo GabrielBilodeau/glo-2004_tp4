@@ -100,7 +100,6 @@ class Server:
         associe le socket au nouvel l'utilisateur et retourne un succès,
         sinon retourne un message d'erreur.
         """
-        print('Creating a new account server side')
 
         message = json.loads(payload)
         received_username = message["payload"]["username"]
@@ -119,9 +118,11 @@ class Server:
                     hasher.update(received_pwd.encode('utf-8'))
   
                     os.makedirs(user_dir)
-                    with open(user_dir + '/' + 
-                              gloutils.PASSWORD_FILENAME, "a") as f:
+                    with open(os.path.join(user_dir, gloutils.PASSWORD_FILENAME),
+                               "a") as f:
                         f.write(hasher.hexdigest())
+
+                    self._logged_users[client_soc] = received_username
 
                     return gloutils.GloMessage(
                         header=gloutils.Headers.OK,
@@ -151,7 +152,6 @@ class Server:
                 header=gloutils.Headers.ERROR,
                 payload=error_payload
             )
-        return gloutils.GloMessage()
     
     def _is_valid_username(self, other) -> bool:
         pattern = re.compile(r'^[a-zA-Z0-9_.-]+$')
@@ -166,18 +166,36 @@ class Server:
         retourne un succès, sinon retourne un message d'erreur.
         """
 
-        # Changer le header
-        if client_soc in self._logged_users:
-            if self._logged_users[client_soc] == payload:
-                return gloutils.GloMessage(
-                        header=gloutils.Headers.AUTH_LOGIN,
-                        payload=gloutils.Headers.OK
+        message = json.loads(payload)
+        recv_username = message["payload"]["username"]
+        recv_pwd = message["payload"]["password"]
+
+        hasher = hashlib.sha3_512()
+        hasher.update(recv_pwd.encode('utf-8'))
+
+        user_dir = os.path.join(self._SERVER_LOST_DIR, recv_username.lower())
+
+        if os.path.exists(user_dir):
+            with open(os.path.join(user_dir, gloutils.PASSWORD_FILENAME), "r") as f:
+                stored_pwd =  f.readline()
+                if hmac.compare_digest(hasher.hexdigest(), stored_pwd):
+                    print('connecion ressuite')
+                    self._logged_users[client_soc] = recv_username
+                    return gloutils.GloMessage(
+                        header=gloutils.Headers.OK
                     )
-        else:
-            return gloutils.GloMessage(
-                        header=gloutils.Headers.AUTH_LOGIN,
-                        payload=gloutils.Headers.ERROR
-                    )
+
+        error_payload = gloutils.ErrorPayload(
+            error_message="Les indentifiants ne sont pas valide"
+        )
+        return gloutils.GloMessage(
+            header=gloutils.Headers.ERROR,
+            payload=error_payload
+        )        
+
+
+
+
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
