@@ -112,7 +112,7 @@ class Server:
 
             if not os.path.exists(user_dir):
 
-                if re.search(r"((?=[^a-z]*[a-z])(?=[^A-Z]*[A-Z])(?=[^0-9]*[0-9])){10,}",
+                if re.search(r"(?=[^a-z]*[a-z])(?=[^A-Z]*[A-Z])(?=[^\d]*\d).{10,}",
                               received_pwd):
                     
                     hasher = hashlib.sha3_512()
