@@ -5,6 +5,7 @@ Noms et numéros étudiants:
 -
 -
 """
+import pathlib
 import re
 import hashlib
 import hmac
@@ -34,19 +35,20 @@ class Server:
         S'assure que les dossiers de données du serveur existent.
         """
         try :
-            soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            soc.bind(("127.0.0.1", gloutils.APP_PORT))
-            soc.listen()
+             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+             self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+             self._server_socket.bind(("127.0.0.1", gloutils.APP_PORT))
+             self._server_socket.listen()
         except socket.error:
             sys.exit(1)
-        self._server_socket = soc
+
         self._client_socs = []
         self._logged_users = {}
 
+
         current_dir =os.path.dirname(os.path.abspath(__file__))
-        SERVER_DATA_DIR = os.path.join(current_dir, 'SERVER_DATA_DIR')
-        SERVER_LOST_DIR = 'SERVER_LOST_DIR'
+        SERVER_DATA_DIR = os.path.join(current_dir, gloutils.SERVER_DATA_DIR)
+        SERVER_LOST_DIR = gloutils.SERVER_LOST_DIR
 
         if not os.path.exists(SERVER_DATA_DIR):
             os.makedirs(SERVER_DATA_DIR)
@@ -55,7 +57,7 @@ class Server:
         if not os.path.exists(lost_dir_path):
             os.makedirs(lost_dir_path)
 
-        self._SERVER_LOST_DIR = lost_dir_path
+        self._SERVER_LOST_DIR = SERVER_DATA_DIR
 
     def cleanup(self) -> None:
         """Ferme toutes les connexions résiduelles."""
@@ -98,23 +100,29 @@ class Server:
         associe le socket au nouvel l'utilisateur et retourne un succès,
         sinon retourne un message d'erreur.
         """
+        print('Creating a new account server side')
 
         message = json.loads(payload)
         received_username = message["payload"]["username"]
         received_pwd = message["payload"]["password"]
 
-
-        if re.search(r"^\w+$", received_username):
+        if self._is_valid_username(received_username):
             lowerCaseUsername = received_username.lower()
-            if not os.path.exists(self._SERVER_LOST_DIR + lowerCaseUsername):
+            user_dir = os.path.join(self._SERVER_LOST_DIR, lowerCaseUsername)
+
+            if not os.path.exists(user_dir):
+
                 if re.search(r"((?=[^a-z]*[a-z])(?=[^A-Z]*[A-Z])(?=[^0-9]*[0-9])){10,}",
                               received_pwd):
-                    print(received_pwd)
-                    hasher = hashlib.sha3_512()
-                    hashed_pwd = hasher.update(received_pwd.encode('utf-8'))
-                    print(hashed_pwd)
-
                     
+                    hasher = hashlib.sha3_512()
+                    hasher.update(received_pwd.encode('utf-8'))
+  
+                    os.makedirs(user_dir)
+                    with open(user_dir + '/' + 
+                              gloutils.PASSWORD_FILENAME, "a") as f:
+                        f.write(hasher.hexdigest())
+
                     return gloutils.GloMessage(
                         header=gloutils.Headers.OK,
                     )
@@ -144,6 +152,10 @@ class Server:
                 payload=error_payload
             )
         return gloutils.GloMessage()
+    
+    def _is_valid_username(self, other) -> bool:
+        pattern = re.compile(r'^[a-zA-Z0-9_.-]+$')
+        return bool(pattern.match(other))
 
     def _login(self, client_soc: socket.socket, payload: gloutils.AuthPayload
                ) -> gloutils.GloMessage:
