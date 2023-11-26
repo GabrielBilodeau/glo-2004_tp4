@@ -199,6 +199,8 @@ class Server:
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
+        del self._logged_users[client_soc]
+
 
     def _get_email_list(self, client_soc: socket.socket
                         ) -> gloutils.GloMessage:
