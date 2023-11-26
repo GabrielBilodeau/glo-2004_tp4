@@ -252,6 +252,16 @@ class Client:
                 print(gloutils.CLIENT_USE_CHOICE + "\n")
                 choice = input("Entrez votre choix [1-4]: ")
 
+                match choice:
+                    case "1":
+                        self._read_email
+                    case "2":
+                        self._send_email
+                    case "3":
+                        self._check_stats
+                    case 4:
+                        self._logout
+
     def _validate_domain(p_destination: str) -> bool:
         good_domain = False
         
