@@ -11,7 +11,6 @@ import getpass
 import json
 import socket
 import sys
-import hashlib
 
 import glosocket
 import gloutils
@@ -220,6 +219,21 @@ class Client:
         Affiche les statistiques à l'aide du gabarit `STATS_DISPLAY`.
         """
 
+        request = gloutils.GloMessage(header=gloutils.Headers.STATS_REQUEST)
+
+        glosocket.send_mesg(self._socket, request)
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+
+        if response["headers"] == gloutils.Headers.OK:
+            count = response["payload"]["count"]
+            size = response["payload"]["size"]
+
+            print(gloutils.STATS_DISPLAY.format(
+                count=count,
+                size=size
+            ))
+
     def _logout(self) -> None:
         """
         Préviens le serveur avec l'entête `AUTH_LOGOUT`.
@@ -251,6 +265,16 @@ class Client:
                 # Main menu
                 print(gloutils.CLIENT_USE_CHOICE + "\n")
                 choice = input("Entrez votre choix [1-4]: ")
+
+                match choice:
+                    case "1":
+                        self._read_email
+                    case "2":
+                        self._send_email
+                    case "3":
+                        self._check_stats
+                    case 4:
+                        self._logout
 
     def _validate_domain(p_destination: str) -> bool:
         good_domain = False
