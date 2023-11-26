@@ -11,7 +11,6 @@ import getpass
 import json
 import socket
 import sys
-import hashlib
 
 import glosocket
 import gloutils
@@ -219,6 +218,21 @@ class Client:
 
         Affiche les statistiques à l'aide du gabarit `STATS_DISPLAY`.
         """
+
+        request = gloutils.GloMessage(header=gloutils.Headers.STATS_REQUEST)
+
+        glosocket.send_mesg(self._socket, request)
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+
+        if response["headers"] == gloutils.Headers.OK:
+            count = response["payload"]["count"]
+            size = response["payload"]["size"]
+
+            print(gloutils.STATS_DISPLAY.format(
+                count=count,
+                size=size
+            ))
 
     def _logout(self) -> None:
         """
