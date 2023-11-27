@@ -109,9 +109,9 @@ class Client:
         Préviens le serveur de la déconnexion avec l'entête `BYE` et ferme le
         socket du client.
         """
-        message = gloutils.GloMessage(
+        message = json.dumps(gloutils.GloMessage(
                             header=gloutils.Headers.BYE
-                        )
+                        ))
         glosocket.send_mesg(self._socket, json.dumps(message))
         self._socket.close()
 
@@ -209,7 +209,7 @@ class Client:
             payload=email
         )
 
-        glosocket.send_mesg(self._socket, message)
+        glosocket.send_mesg(self._socket, json.dumps(message))
 
 
     def _check_stats(self) -> None:
@@ -221,7 +221,7 @@ class Client:
 
         request = gloutils.GloMessage(header=gloutils.Headers.STATS_REQUEST)
 
-        glosocket.send_mesg(self._socket, request)
+        glosocket.send_mesg(self._socket, json.dumps(request))
 
         response = json.loads(glosocket.recv_mesg(self._socket))
 
@@ -243,7 +243,7 @@ class Client:
 
         logout_request = gloutils.GloMessage(header=gloutils.Headers.AUTH_LOGOUT)
 
-        glosocket.send_mesg(self._socket, logout_request)
+        glosocket.send_mesg(self._socket, json.dumps(logout_request))
 
         response = json.loads(glosocket.recv_mesg(self._socket))
 
