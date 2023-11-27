@@ -241,6 +241,15 @@ class Client:
         Met à jour l'attribut `_username`.
         """
 
+        logout_request = gloutils.GloMessage(header=gloutils.Headers.AUTH_LOGOUT)
+
+        glosocket.send_mesg(self._socket, logout_request)
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+
+        if response["headers"] == gloutils.Headers.OK:
+            self._username = None
+
     def run(self) -> None:
         """Point d'entrée du client."""
         should_quit = False
