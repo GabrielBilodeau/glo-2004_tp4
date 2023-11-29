@@ -5,7 +5,7 @@ Noms et numéros étudiants:
 -
 -
 """
-import pathlib
+
 import re
 import hashlib
 import hmac
@@ -67,22 +67,10 @@ class Server:
 
     def _accept_client(self) -> None:
         """Accepte un nouveau client."""
-        print("accepting new client")
         client_socket, _  = self._server_socket.accept()
         self._client_socs.append(client_socket)
 
-        payload = glosocket.recv_mesg(client_socket)
-
-        if json.loads(payload)["header"] == gloutils.Headers.AUTH_LOGIN:
-            message = self._login(client_socket, payload)
-            glosocket.send_mesg(client_socket, json.dumps(message))
-        elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
-            message = self._create_account(client_socket, payload)
-            glosocket.send_mesg(client_socket,json.dumps(message))
-        elif json.loads(payload)["header"] == gloutils.Headers.BYE:
-            # Si logged in retirer du dic
-            self._client_socs.pop(client_socket)
-            client_socket.close()
+        
 
     def _remove_client(self, client_soc: socket.socket) -> None:
         """Retire le client des structures de données et ferme sa connexion."""
@@ -186,16 +174,12 @@ class Server:
                     )
 
         error_payload = gloutils.ErrorPayload(
-            error_message="Les indentifiants ne sont pas valide"
+            error_message="Les indentifiants ne sont pas valides"
         )
         return gloutils.GloMessage(
             header=gloutils.Headers.ERROR,
             payload=error_payload
-        )        
-
-
-
-
+        )
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
@@ -248,13 +232,19 @@ class Server:
         result = select.select([self._server_socket] + self._client_socs, [], [])
         waiters = result[0]
         while True:
-            # Select readable sockets
             for waiter in waiters:
                 if waiter == self._server_socket:
                     self._accept_client()
-                
-                   
-            
+                    payload = glosocket.recv_mesg(waiter)
+                    if json.loads(payload)["header"] == gloutils.Headers.AUTH_LOGIN:
+                         message = self._login(waiter, payload)
+                         glosocket.send_mesg(waiter, json.dumps(message))
+                    elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
+                         message = self._create_account(waiter, payload)
+                         glosocket.send_mesg(waiter,json.dumps(message))
+                     elif json.loads(payload)["header"] == gloutils.Headers.BYE:
+                        self._client_socs.pop(waiter)
+                        waiter.close()
 
 
 def _main() -> int:
