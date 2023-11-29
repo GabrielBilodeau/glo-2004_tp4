@@ -109,9 +109,9 @@ class Client:
         Préviens le serveur de la déconnexion avec l'entête `BYE` et ferme le
         socket du client.
         """
-        message = gloutils.GloMessage(
+        message = json.dumps(gloutils.GloMessage(
                             header=gloutils.Headers.BYE
-                        )
+                        ))
         glosocket.send_mesg(self._socket, json.dumps(message))
         self._socket.close()
 
@@ -171,6 +171,10 @@ class Client:
                         date=date,
                         body=content
                     ))
+        elif response["header"] == gloutils.Headers.ERROR:
+            print(response["payload"]["error_message"])
+        else:
+            print("Invalid server response")
 
     def _send_email(self) -> None:
         """
@@ -209,7 +213,7 @@ class Client:
             payload=email
         )
 
-        glosocket.send_mesg(self._socket, message)
+        glosocket.send_mesg(self._socket, json.dumps(message))
 
 
     def _check_stats(self) -> None:
@@ -221,7 +225,7 @@ class Client:
 
         request = gloutils.GloMessage(header=gloutils.Headers.STATS_REQUEST)
 
-        glosocket.send_mesg(self._socket, request)
+        glosocket.send_mesg(self._socket, json.dumps(request))
 
         response = json.loads(glosocket.recv_mesg(self._socket))
 
@@ -240,6 +244,15 @@ class Client:
 
         Met à jour l'attribut `_username`.
         """
+
+        logout_request = gloutils.GloMessage(header=gloutils.Headers.AUTH_LOGOUT)
+
+        glosocket.send_mesg(self._socket, json.dumps(logout_request))
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+
+        if response["headers"] == gloutils.Headers.OK:
+            self._username = None
 
     def run(self) -> None:
         """Point d'entrée du client."""
@@ -268,13 +281,13 @@ class Client:
 
                 match choice:
                     case "1":
-                        self._read_email
+                        self._read_email()
                     case "2":
-                        self._send_email
+                        self._send_email()
                     case "3":
-                        self._check_stats
+                        self._check_stats()
                     case 4:
-                        self._logout
+                        self._logout()
 
     def _validate_domain(p_destination: str) -> bool:
         good_domain = False
