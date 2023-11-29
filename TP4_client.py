@@ -254,11 +254,8 @@ class Client:
         logout_request = gloutils.GloMessage(header=gloutils.Headers.AUTH_LOGOUT)
 
         glosocket.send_mesg(self._socket, json.dumps(logout_request))
+        self._username = None
 
-        response = json.loads(glosocket.recv_mesg(self._socket))
-
-        if response["headers"] == gloutils.Headers.OK:
-            self._username = None
 
     def run(self) -> None:
         """Point d'entrée du client."""

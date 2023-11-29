@@ -181,6 +181,8 @@ class Server:
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
         del self._logged_users[client_soc]
+        print(self._logged_users)
+        print(self._client_socs)
 
 
     def _get_email_list(self, client_soc: socket.socket
