@@ -152,7 +152,7 @@ class Client:
                     payload=choice_payload
                 )
 
-                glosocket.send_mesg(self._socket, choice_request)
+                glosocket.send_mesg(self._socket, json.dumps(choice_request))
 
                 content_response = json.loads(glosocket.recv_mesg(self._socket))
 
@@ -201,7 +201,7 @@ class Client:
         date = gloutils.get_current_utc_time()
 
         email = gloutils.EmailContentPayload(
-            sender=sender,
+            sender=sender + "@" + gloutils.SERVER_DOMAIN,
             destination=destination,
             subject=subject,
             date=date,
@@ -214,6 +214,12 @@ class Client:
         )
 
         glosocket.send_mesg(self._socket, json.dumps(message))
+
+        response = json.loads(glosocket.recv_mesg(self._socket))
+        if response["header"] == gloutils.Headers.OK:
+            print("Email envoye avec succes")
+        else:
+            print(response["payload"]["error_message"])
 
 
     def _check_stats(self) -> None:
@@ -229,7 +235,7 @@ class Client:
 
         response = json.loads(glosocket.recv_mesg(self._socket))
 
-        if response["headers"] == gloutils.Headers.OK:
+        if response["header"] == gloutils.Headers.OK:
             count = response["payload"]["count"]
             size = response["payload"]["size"]
 
