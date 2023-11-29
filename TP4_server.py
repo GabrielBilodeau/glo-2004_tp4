@@ -355,6 +355,7 @@ class Server:
                             header = None
                             self._remove_client(sock)
                             self._logout(sock)
+                            sock.close()
 
 
                         if header == gloutils.Headers.AUTH_LOGIN:

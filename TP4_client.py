@@ -142,6 +142,8 @@ class Client:
                     print(email)
 
                 mail_choice = input(f"Entrez votre choix [1-{len(email_list)}]")
+                while int(mail_choice) > len(email_list):
+                    mail_choice = input(f"Entrez votre choix [1-{len(email_list)}]")
 
                 choice_payload = gloutils.EmailChoicePayload(
                     choice = int(mail_choice)
