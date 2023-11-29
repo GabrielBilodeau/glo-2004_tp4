@@ -352,37 +352,34 @@ class Server:
                         self._accept_client()
                     else:
                         message = glosocket.recv_mesg(sock)
-                        if not message:
+                        header = json.loads(message)["header"]
+                        
+                        if header == gloutils.Headers.AUTH_LOGIN:
+                            payload = json.loads(message)["payload"]
+                            message = self._login(sock, payload)
+                            glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.AUTH_REGISTER:
+                             payload = json.loads(message)["payload"]
+                             message = self._create_account(sock, payload)
+                             glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.BYE:
                             self._remove_client(sock)
-                        else:
-                            header = json.loads(message)["header"]
-                            
-                            if header == gloutils.Headers.AUTH_LOGIN:
-                                payload = json.loads(message)["payload"]
-                                message = self._login(sock, payload)
-                                glosocket.send_mesg(sock, json.dumps(message))
-                            elif header == gloutils.Headers.AUTH_REGISTER:
-                                payload = json.loads(message)["payload"]
-                                message = self._create_account(sock, payload)
-                                glosocket.send_mesg(sock, json.dumps(message))
-                            elif header == gloutils.Headers.BYE:
-                                self._remove_client(sock)
-                            elif header == gloutils.Headers.INBOX_READING_REQUEST:
-                                message = self._get_email_list(sock)
-                                glosocket.send_mesg(sock, json.dumps(message))
-                            elif header == gloutils.Headers.INBOX_READING_CHOICE:
-                                payload = json.loads(message)["payload"]
-                                message = self._get_email(sock, payload)
-                                glosocket.send_mesg(sock, json.dumps(message))
-                            elif header == gloutils.Headers.EMAIL_SENDING:
-                                payload = json.loads(message)["payload"]
-                                message = self._send_email(payload)
-                                glosocket.send_mesg(sock, json.dumps(message))
-                            elif header == gloutils.Headers.AUTH_LOGOUT:
-                                self._logout(sock)
-                            elif header == gloutils.Headers.STATS_REQUEST:
-                                message= self._get_stats(sock)
-                                glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.INBOX_READING_REQUEST:
+                            message = self._get_email_list(sock)
+                            glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.INBOX_READING_CHOICE:
+                            payload = json.loads(message)["payload"]
+                            message = self._get_email(sock, payload)
+                            glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.EMAIL_SENDING:
+                            payload = json.loads(message)["payload"]
+                            message = self._send_email(payload)
+                            glosocket.send_mesg(sock, json.dumps(message))
+                        elif header == gloutils.Headers.AUTH_LOGOUT:
+                            self._logout(sock)
+                        elif header == gloutils.Headers.STATS_REQUEST:
+                            message= self._get_stats(sock)
+                            glosocket.send_mesg(sock, json.dumps(message))
                                 
 
             except KeyboardInterrupt:

@@ -112,7 +112,7 @@ class Client:
         message = json.dumps(gloutils.GloMessage(
                             header=gloutils.Headers.BYE
                         ))
-        glosocket.send_mesg(self._socket, json.dumps(message))
+        glosocket.send_mesg(self._socket, message)
         self._socket.close()
 
     def _read_email(self) -> None:
