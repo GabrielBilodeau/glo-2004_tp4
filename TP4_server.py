@@ -88,10 +88,8 @@ class Server:
         associe le socket au nouvel l'utilisateur et retourne un succès,
         sinon retourne un message d'erreur.
         """
-
-        message = json.loads(payload)
-        received_username = message["payload"]["username"]
-        received_pwd = message["payload"]["password"]
+        received_username = payload["username"]
+        received_pwd = payload["password"]
 
         if self._is_valid_username(received_username):
             lowerCaseUsername = received_username.lower()
@@ -154,9 +152,8 @@ class Server:
         retourne un succès, sinon retourne un message d'erreur.
         """
 
-        message = json.loads(payload)
-        recv_username = message["payload"]["username"]
-        recv_pwd = message["payload"]["password"]
+        recv_username = payload["username"]
+        recv_pwd = payload["password"]
 
         hasher = hashlib.sha3_512()
         hasher.update(recv_pwd.encode('utf-8'))
@@ -225,26 +222,94 @@ class Server:
 
         Retourne un messange indiquant le succès ou l'échec de l'opération.
         """
-        return gloutils.GloMessage()
+
+        dest = payload["destination"]
+        try:
+            username = dest[:dest.index('@')]
+            domain = dest[dest.index('@') + 1:]
+        except ValueError:
+            error_payload = gloutils.ErrorPayload(
+                payload = "Le nom du destinataire n'est pas valide"
+            )
+            return gloutils.GloMessage(
+                header=gloutils.Headers.ERROR,
+                payload=error_payload
+            )
+        
+
+        dest_path = os.path.join(self._SERVER_LOST_DIR, username.lower())
+        if domain != gloutils.SERVER_DOMAIN:
+            print("externe")
+            print(domain, gloutils.SERVER_DOMAIN)
+            error_payload = "Destinateur externe non pas pris en compte"
+            return gloutils.GloMessage(
+                header=gloutils.Headers.ERROR,
+                payload=error_payload
+            )
+        
+        if os.path.exists(dest_path):
+            filename = f"{gloutils.get_current_utc_time()}.json"
+            file_path = os.path.join(dest_path, filename)
+            with open(file_path, "w") as json_file:
+                json.dump(payload, json_file)
+
+            return gloutils.GloMessage(
+                header=gloutils.Headers.OK,
+            )
+        
+        elif not os.path.exists(dest_path):
+            
+            lost_file = os.path.join(self._SERVER_LOST_DIR, gloutils.SERVER_LOST_DIR)
+            filename = f"{gloutils.get_current_utc_time()}.json"
+            file_path = os.path.join(lost_file, filename)
+            with open(file_path, "w") as json_file:
+                json.dump(payload, json_file)
+            error_payload = "Destinataire introuvable"
+            return gloutils.GloMessage(
+                header=gloutils.Headers.ERROR,
+                payload=error_payload
+            )
 
     def run(self):
-        """Point d'entrée du serveur."""
-        result = select.select([self._server_socket] + self._client_socs, [], [])
-        waiters = result[0]
         while True:
-            for waiter in waiters:
-                if waiter == self._server_socket:
-                    self._accept_client()
-                    payload = glosocket.recv_mesg(waiter)
-                    if json.loads(payload)["header"] == gloutils.Headers.AUTH_LOGIN:
-                         message = self._login(waiter, payload)
-                         glosocket.send_mesg(waiter, json.dumps(message))
-                    elif json.loads(payload)["header"] == gloutils.Headers.AUTH_REGISTER:
-                         message = self._create_account(waiter, payload)
-                         glosocket.send_mesg(waiter,json.dumps(message))
-                     elif json.loads(payload)["header"] == gloutils.Headers.BYE:
-                        self._client_socs.pop(waiter)
-                        waiter.close()
+            try:
+            # Use select to wait for readable sockets
+                readable, _, _ = select.select([self._server_socket] +
+                                                self._client_socs, [], [])
+
+                for sock in readable:
+                    if sock == self._server_socket:
+                        self._accept_client()
+                    else:
+                        message = glosocket.recv_mesg(sock)
+                        if not message:
+                            self._remove_client(sock)
+                        else:
+                            header = json.loads(message)["header"]
+                            payload = json.loads(message)["payload"]
+                            if header == gloutils.Headers.AUTH_LOGIN:
+                                message = self._login(sock, payload)
+                                glosocket.send_mesg(sock, json.dumps(message))
+                            elif header == gloutils.Headers.AUTH_REGISTER:
+                                message = self._create_account(sock, payload)
+                                glosocket.send_mesg(sock, json.dumps(message))
+                            elif header == gloutils.Headers.BYE:
+                                self._remove_client(sock)
+                            elif header == gloutils.Headers.INBOX_READING_REQUEST:
+                                self._get_email_list(sock)
+                            elif header == gloutils.Headers.INBOX_READING_CHOICE:
+                                self._get_email(sock, payload)
+                            elif header == gloutils.Headers.EMAIL_SENDING:
+                                message = self._send_email(payload)
+                                glosocket.send_mesg(sock, json.dumps(message))
+                            elif header == gloutils.Headers.AUTH_LOGOUT:
+                                self._logout(sock)
+
+            except KeyboardInterrupt:
+                # Handle keyboard interrupt to gracefully exit the server
+                self.cleanup()
+                break
+
 
 
 def _main() -> int:

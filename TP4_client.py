@@ -198,7 +198,7 @@ class Client:
         while (buffer != ".\n"):
             body += buffer
             buffer = input() + '\n'
-        date = gloutils.get_current_utc_time
+        date = gloutils.get_current_utc_time()
 
         email = gloutils.EmailContentPayload(
             sender=sender,
