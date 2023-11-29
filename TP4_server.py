@@ -164,7 +164,6 @@ class Server:
             with open(os.path.join(user_dir, gloutils.PASSWORD_FILENAME), "r") as f:
                 stored_pwd =  f.readline()
                 if hmac.compare_digest(hasher.hexdigest(), stored_pwd):
-                    print('connecion ressuite')
                     self._logged_users[client_soc] = recv_username
                     return gloutils.GloMessage(
                         header=gloutils.Headers.OK
@@ -180,9 +179,7 @@ class Server:
 
     def _logout(self, client_soc: socket.socket) -> None:
         """Déconnecte un utilisateur."""
-        del self._logged_users[client_soc]
-        print(self._logged_users)
-        print(self._client_socs)
+        self._logged_users.pop(client_soc, None)
 
 
     def _get_email_list(self, client_soc: socket.socket
@@ -307,8 +304,6 @@ class Server:
 
         dest_path = os.path.join(self._SERVER_LOST_DIR, username.lower())
         if domain != gloutils.SERVER_DOMAIN:
-            print("externe")
-            print(domain, gloutils.SERVER_DOMAIN)
             error_payload = gloutils.ErrorPayload(
                error_message= "Destinateur externe non pas pris en compte"
             )
@@ -353,9 +348,15 @@ class Server:
                     if sock == self._server_socket:
                         self._accept_client()
                     else:
-                        message = glosocket.recv_mesg(sock)
-                        header = json.loads(message)["header"]
-                        
+                        try:
+                            message = glosocket.recv_mesg(sock)
+                            header = json.loads(message)["header"]
+                        except glosocket.GLOSocketError:
+                            header = None
+                            self._remove_client(sock)
+                            self._logout(sock)
+
+
                         if header == gloutils.Headers.AUTH_LOGIN:
                             payload = json.loads(message)["payload"]
                             message = self._login(sock, payload)
